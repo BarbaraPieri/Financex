@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Api;
 
 use Illuminate\Http\Request;
@@ -14,21 +15,22 @@ class PagamentoController extends Controller
         // Obter todos os pagamentos
         $pagamentos = Pagamento::all();
 
+
         return response()->json($pagamentos);
     }
 
     public function show($id)
-{
-    try {
-
-        $pagamento = Pagamento::findOrFail($id);
-        return response()->json($pagamento);
-    } catch (ModelNotFoundException $e) {
-        return response()->json(['error' => 'Pagamento não encontrado'], 404);
-    } catch (\Exception $e) {
-        return response()->json(['error' => 'Erro interno no servidor'], 500);
+    {
+        try {
+            $pagamento = Pagamento::findOrFail($id);
+            return response()->json($pagamento);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'Pagamento não encontrado'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Erro interno no servidor'], 500);
+        }
     }
-}
+
     public function store(Request $request)
     {
         // Validação dos dados recebidos
@@ -55,7 +57,6 @@ class PagamentoController extends Controller
     public function destroy($idPagamento)
     {
         try {
-            // Converter o ID para inteiro
             $idPagamento = (int) $idPagamento;
 
             $pagamento = Pagamento::find($idPagamento);
@@ -64,7 +65,6 @@ class PagamentoController extends Controller
                 return response()->json(['error' => 'Pagamento não encontrado'], 404);
             }
 
-            // Verificar se o pagamento está no estado apropriado para cancelamento
             if ($pagamento->status !== 'CRIADO') {
                 return response()->json(['error' => 'Não é possível cancelar um pagamento neste estado'], 400);
             }
@@ -77,52 +77,67 @@ class PagamentoController extends Controller
         }
     }
 
-    public function confirmarPagamento(Request $request, $id)
-    {
-        // Encontrar um pagamento pelo ID
-        $pagamento = Pagamento::find($id);
+    public function update(Request $request, $id)
+{
+    $id = (int) $id;
 
-        if (!$pagamento) {
-            return response()->json(['error' => 'Pagamento não encontrado'], 404);
-        }
+    $pagamento = Pagamento::find($id);
 
-        // Validação dos dados do cliente
-        $request->validate([
-            'nome' => 'required',
-            'email' => 'required|email',
-            'cpf' => 'required|digits:11|numeric',
-            'telefone' => 'required',
-            'rua' => 'required',
-            'numero' => 'required|numeric',
-            'bairro' => 'required',
-            'cidade' => 'required',
-            'estado' => 'required',
-        ]);
-
-        // Criação da nota fiscal associada ao pagamento
-        $notaFiscal = new NotaFiscal([
-            'nome' => $request->input('nome'),
-            'email' => $request->input('email'),
-            'cpf' => $request->input('cpf'),
-            'telefone' => $request->input('telefone'),
-            'rua' => $request->input('rua'),
-            'numero' => $request->input('numero'),
-            'bairro' => $request->input('bairro'),
-            'cidade' => $request->input('cidade'),
-            'estado' => $request->input('estado'),
-        ]);
-
-        $notaFiscal->save();
-
-        // Associa a nota fiscal ao pagamento
-        $pagamento->notaFiscal()->associate($notaFiscal);
-        $pagamento->update(['status' => 'CONFIRMADO']);
-
-        return response()->json([
-            'id_pagamento' => $pagamento->id,
-            'status_pagamento' => $pagamento->status,
-            'id_nota_fiscal' => $notaFiscal->id,
-        ], 200);
+    if (!$pagamento) {
+        return response()->json(['error' => 'Pagamento não encontrado'], 404);
     }
+
+    $request->validate([
+        'nome' => 'required',
+        'email' => 'required|email',
+        'cpf' => 'required|digits:11|numeric',
+        'telefone' => 'required',
+        'rua' => 'required',
+        'numero' => 'required|numeric',
+        'bairro' => 'required',
+        'cidade' => 'required',
+        'estado' => 'required',
+    ]);
+
+    // Inclua os dados necessários para a nota fiscal
+    $dadosNotaFiscal = [
+        'nome' => $request->input('nome'),
+        'email' => $request->input('email'),
+        'cpf' => $request->input('cpf'),
+        'telefone' => $request->input('telefone'),
+        'rua' => $request->input('rua'),
+        'numero' => $request->input('numero'),
+        'bairro' => $request->input('bairro'),
+        'cidade' => $request->input('cidade'),
+        'estado' => $request->input('estado'),
+    ];
+
+    $notaFiscal = $this->criarNotaFiscal($dadosNotaFiscal);
+
+    $this->associarNotaFiscalAoPagamento($pagamento, $notaFiscal);
+
+    $this->confirmarPagamento($pagamento);
+
+    return response()->json([
+        'message' => 'Pagamento confirmado com sucesso!',
+        'id_pagamento' => $pagamento->id,
+        'status_pagamento' => $pagamento->status,
+        'id_nota_fiscal' => $notaFiscal->id,
+    ], 200);
 }
 
+private function criarNotaFiscal(array $dadosCliente)
+{
+    return NotaFiscal::create($dadosCliente);
+}
+
+private function associarNotaFiscalAoPagamento($pagamento, $notaFiscal)
+{
+    $pagamento->notaFiscal()->associate($notaFiscal);
+}
+
+private function confirmarPagamento($pagamento)
+{
+    $pagamento->update(['status' => 'CONFIRMADO']);
+}
+}

@@ -14,12 +14,12 @@ use App\Http\Controllers\Api\PagamentoController;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
-
 // Rotas do PagamentoController
 Route::apiResource('pagamentos', PagamentoController::class)->except([
     'create', 'edit'
 ]);
 
-Route::get('/pagamentos', [PagamentoController::class, 'index']);
 Route::delete('/pagamentos/{pagamento}', [PagamentoController::class, 'destroy'])
-->name('pagamentos.cancelarPagamento');
+    ->name('pagamentos.cancelarPagamento');
+Route::patch('/pagamentos/{pagamento}', [PagamentoController::class, 'update'])
+    ->name('pagamentos.confirmarPagamento');

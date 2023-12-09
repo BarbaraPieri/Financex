@@ -23,18 +23,36 @@ class RouteServiceProvider extends ServiceProvider
      * Define your route model bindings, pattern filters, and other route configuration.
      */
     public function boot(): void
-    {
-        RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
-        });
+{
+    RateLimiter::for('api', function (Request $request) {
+        return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+    });
 
-        $this->routes(function () {
-            Route::middleware('api')
-                ->prefix('api')
-                ->group(base_path('routes/api.php'));
+    $this->configureRateLimiting();
 
-            Route::middleware('web')
-                ->group(base_path('routes/web.php'));
-        });
-    }
+    $this->routes(function () {
+        // Rotas da API
+        Route::prefix('api')
+            ->middleware(['api'])
+            ->namespace($this->namespace)
+            ->group(base_path('routes/api.php'));
+
+        // Rotas da web
+        Route::middleware(['web'])
+            ->namespace($this->namespace)
+            ->group(base_path('routes/web.php'));
+    });
+}
+
+/**
+ * Configure the rate limiters for the application.
+ *
+ * @return void
+ */
+protected function configureRateLimiting(): void
+{
+    RateLimiter::for('api', function (Request $request) {
+        return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+    });
+}
 }

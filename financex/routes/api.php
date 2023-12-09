@@ -21,4 +21,5 @@ Route::apiResource('pagamentos', PagamentoController::class)->except([
 ]);
 
 Route::get('/pagamentos', [PagamentoController::class, 'index']);
-
+Route::delete('/pagamentos/{pagamento}', [PagamentoController::class, 'destroy'])
+->name('pagamentos.cancelarPagamento');

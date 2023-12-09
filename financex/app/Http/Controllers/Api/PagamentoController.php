@@ -18,8 +18,9 @@ class PagamentoController extends Controller
     }
 
     public function show($id)
-    {
+{
     try {
+
         $pagamento = Pagamento::findOrFail($id);
         return response()->json($pagamento);
     } catch (ModelNotFoundException $e) {
@@ -27,8 +28,7 @@ class PagamentoController extends Controller
     } catch (\Exception $e) {
         return response()->json(['error' => 'Erro interno no servidor'], 500);
     }
-    }
-
+}
     public function store(Request $request)
     {
         // Validação dos dados recebidos
@@ -52,18 +52,29 @@ class PagamentoController extends Controller
         return response()->json(['id_pagamento' => $pagamento->id], 201);
     }
 
-    public function cancelarPagamento($id)
+    public function destroy($idPagamento)
     {
-        // Encontrar e cancelar um pagamento pelo ID
-        $pagamento = Pagamento::find($id);
+        try {
+            // Converter o ID para inteiro
+            $idPagamento = (int) $idPagamento;
 
-        if (!$pagamento) {
-            return response()->json(['error' => 'Pagamento não encontrado'], 404);
+            $pagamento = Pagamento::find($idPagamento);
+
+            if (!$pagamento) {
+                return response()->json(['error' => 'Pagamento não encontrado'], 404);
+            }
+
+            // Verificar se o pagamento está no estado apropriado para cancelamento
+            if ($pagamento->status !== 'CRIADO') {
+                return response()->json(['error' => 'Não é possível cancelar um pagamento neste estado'], 400);
+            }
+
+            $pagamento->update(['status' => 'CANCELADO']);
+
+            return response()->json([], 204);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Erro interno no servidor'], 500);
         }
-
-        $pagamento->update(['status' => 'CANCELADO']);
-
-        return response()->json([], 204);
     }
 
     public function confirmarPagamento(Request $request, $id)

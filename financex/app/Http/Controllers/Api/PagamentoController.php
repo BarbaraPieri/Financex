@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Pagamento;
 use App\Models\NotaFiscal;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Log;
+
 
 class PagamentoController extends Controller
 {
@@ -88,56 +90,47 @@ class PagamentoController extends Controller
     }
 
     $request->validate([
-        'nome' => 'required',
-        'email' => 'required|email',
-        'cpf' => 'required|digits:11|numeric',
-        'telefone' => 'required',
-        'rua' => 'required',
-        'numero' => 'required|numeric',
-        'bairro' => 'required',
-        'cidade' => 'required',
-        'estado' => 'required',
+        'valor' => 'required|numeric|min:0.01',
+        'nome_cartao' => 'required',
+        'numero_cartao' => 'required|digits:16|numeric',
+        'expiracao' => 'required|date_format:Y-m|after_or_equal:' . now()->format('Y-m'),
+        'codigo_cvv' => 'required|digits:3|numeric',
     ]);
 
-    // Inclua os dados necessários para a nota fiscal
-    $dadosNotaFiscal = [
-        'nome' => $request->input('nome'),
-        'email' => $request->input('email'),
-        'cpf' => $request->input('cpf'),
-        'telefone' => $request->input('telefone'),
-        'rua' => $request->input('rua'),
-        'numero' => $request->input('numero'),
-        'bairro' => $request->input('bairro'),
-        'cidade' => $request->input('cidade'),
-        'estado' => $request->input('estado'),
-    ];
+    // Atualização dos dados do pagamento
+    $pagamento->update([
+        'valor' => $request->input('valor'),
+        'nome_cartao' => $request->input('nome_cartao'),
+        'numero_cartao' => $request->input('numero_cartao'),
+        'expiracao' => $request->input('expiracao'),
+        'codigo_cvv' => $request->input('codigo_cvv'),
+    ]);
 
-    $notaFiscal = $this->criarNotaFiscal($dadosNotaFiscal);
+    // Verifica se já existe uma nota fiscal associada
+    if (!$pagamento->notaFiscal) {
+        // Se não existir, cria uma nova nota fiscal
+        $notaFiscal = $pagamento->notaFiscal()->create([
+            'nome' => $request->input('nome'),
+            'email' => $request->input('email'),
+            'cpf' => $request->input('cpf'),
+            'telefone' => $request->input('telefone'),
+            'rua' => $request->input('rua'),
+            'numero' => $request->input('numero'),
+            'bairro' => $request->input('bairro'),
+            'cidade' => $request->input('cidade'),
+            'estado' => $request->input('estado'),
+        ]);
 
-    $this->associarNotaFiscalAoPagamento($pagamento, $notaFiscal);
+        // Atualiza o status do pagamento para CONFIRMADO
+        $pagamento->update(['status' => 'CONFIRMADO']);
 
-    $this->confirmarPagamento($pagamento);
+        return response()->json([
+            'message' => 'Pagamento confirmado com sucesso!',
+            'id_pagamento' => $pagamento->id,
+            'status_pagamento' => $pagamento->status,
+            'id_nota_fiscal' => $notaFiscal->id,
+        ], 200);
 
-    return response()->json([
-        'message' => 'Pagamento confirmado com sucesso!',
-        'id_pagamento' => $pagamento->id,
-        'status_pagamento' => $pagamento->status,
-        'id_nota_fiscal' => $notaFiscal->id,
-    ], 200);
-}
-
-private function criarNotaFiscal(array $dadosCliente)
-{
-    return NotaFiscal::create($dadosCliente);
-}
-
-private function associarNotaFiscalAoPagamento($pagamento, $notaFiscal)
-{
-    $pagamento->notaFiscal()->associate($notaFiscal);
-}
-
-private function confirmarPagamento($pagamento)
-{
-    $pagamento->update(['status' => 'CONFIRMADO']);
-}
+    }
+    }
 }

@@ -5,13 +5,14 @@ use Illuminate\Support\Facades\Schema;
 
 class CreateNotasFiscaisTable extends Migration
 {
+
     public function up()
     {
         Schema::create('notas_fiscais', function (Blueprint $table) {
             $table->id();
 
             // Adicione a coluna da chave estrangeira
-            $table->foreignId('pagamento_id')->constrained('pagamentos');
+            $table->foreignId('pagamento_id')->constrained();
 
             // Restante das colunas
             $table->string('nome');
@@ -32,4 +33,5 @@ class CreateNotasFiscaisTable extends Migration
     {
         Schema::dropIfExists('notas_fiscais');
     }
-}
+    }
+

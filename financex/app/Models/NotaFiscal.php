@@ -22,9 +22,11 @@ class NotaFiscal extends Model
         'estado',
     ];
 
+    protected $table = 'notas_fiscais';
+
     // Relacionamento com Pagamento
     public function pagamento()
     {
-        return $this->hasOne(Pagamento::class);
+        return $this->hashOne(Pagamento::class);
     }
 }

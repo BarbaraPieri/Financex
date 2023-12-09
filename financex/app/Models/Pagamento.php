@@ -22,6 +22,6 @@ class Pagamento extends Model
     // Relacionamento com NotaFiscal
     public function notaFiscal()
     {
-        return $this->belongsTo(NotaFiscal::class);
+        return $this->hasOne(NotaFiscal::class);
     }
 }

@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Mail\PagamentoConfirmado;
+use App\Models\Pagamento;
 
 
 
@@ -20,4 +22,4 @@ Route::get('/', function () {
 });
 
 
-
+//Route::get('/pagamentos/mail/{idPagamento}', 'PagamentoController@mailConfirmationEmail');

@@ -23,3 +23,6 @@ Route::delete('/pagamentos/{pagamento}', [PagamentoController::class, 'destroy']
     ->name('pagamentos.cancelarPagamento');
 Route::patch('/pagamentos/{pagamento}', [PagamentoController::class, 'update'])
     ->name('pagamentos.confirmarPagamento');
+
+Route::get('/pagamentos/{pagamento}/mail', [PagamentoController::class, 'mailConfirmationEmail'])
+->name('pagamentos.mailConfirmationEmail');

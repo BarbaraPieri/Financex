@@ -7,7 +7,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Pagamento;
 use App\Models\NotaFiscal;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\PagamentoConfirmado;
+
 
 
 class PagamentoController extends Controller
@@ -124,6 +126,9 @@ class PagamentoController extends Controller
         // Atualiza o status do pagamento para CONFIRMADO
         $pagamento->update(['status' => 'CONFIRMADO']);
 
+        // Envie um e-mail de confirmação
+        Mail::to($pagamento->email)->send(new PagamentoConfirmado($pagamento));
+
         return response()->json([
             'message' => 'Pagamento confirmado com sucesso!',
             'id_pagamento' => $pagamento->id,
@@ -132,5 +137,23 @@ class PagamentoController extends Controller
         ], 200);
 
     }
+    }
+    public function mailConfirmationEmail($idPagamento)
+    {
+        try {
+            $idPagamento = (int) $idPagamento;
+
+            $pagamento = Pagamento::find($idPagamento);
+
+            if (!$pagamento) {
+                return response()->json(['error' => 'Pagamento não encontrado'], 404);
+            }
+
+            Mail::to($pagamento->email)->send(new PagamentoConfirmado($pagamento));
+
+            return response()->json(['message' => 'E-mail enviado com sucesso']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Erro interno no servidor ao enviar o e-mail'], 500);
+        }
     }
 }
